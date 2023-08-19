@@ -1,10 +1,10 @@
-@ECHO OFF & NET SESSION >NUL 2>&1 
+@ECHO OFF & NET SESSION >NUL 2>&1
 IF %ERRORLEVEL% == 0 (ECHO Administrator check passed...) ELSE (ECHO You need to run this command with administrative rights.  Is User Account Control enabled? && pause && goto ENDSCRIPT)
 
 COLOR 1F
 SET DISTRO=UbuntuWSL
-SET GITORG=DesktopECHO
-SET GITPRJ=xWSL
+SET GITORG=ikrima
+SET GITPRJ=edevbox-xWSL
 SET BRANCH=master
 SET BASE=https://github.com/%GITORG%/%GITPRJ%/raw/%BRANCH%
 
@@ -20,18 +20,18 @@ IF EXIST .\CMD.EXE CD ..\..
 
 ECHO [xWSL Installer 20220802]
 ECHO:
-ECHO Enter a unique name for your xWSL distro or hit Enter to use default. 
-SET /p DISTRO=Keep this name simple, no space or underscore characters [UbuntuWSL]: 
+ECHO Enter a unique name for your xWSL distro or hit Enter to use default.
+SET /p DISTRO=Keep this name simple, no space or underscore characters [UbuntuWSL]:
 IF EXIST "%DISTRO%" (ECHO. & ECHO Folder exists with that name, choose a new folder name. & PAUSE & GOTO DI)
 WSL.EXE -d %DISTRO% -e . > "%TEMP%\InstCheck.tmp"
-FOR /f %%i in ("%TEMP%\InstCheck.tmp") do set CHKIN=%%~zi 
+FOR /f %%i in ("%TEMP%\InstCheck.tmp") do set CHKIN=%%~zi
 IF %CHKIN% == 0 (ECHO. & ECHO There is a WSL distribution registered with that name; uninstall it or choose a new name. & PAUSE & GOTO DI)
-SET RDPPRT=3399& SET /p RDPPRT=Port number for xRDP traffic or hit Enter to use default [3399]: 
-SET SSHPRT=3322& SET /p SSHPRT=Port number for SSHd traffic or hit Enter to use default [3322]: 
-                 SET /p WINDPI=Set a custom DPI scale, or hit Enter for Windows default [%WINDPI%]: 
+SET RDPPRT=3399& SET /p RDPPRT=Port number for xRDP traffic or hit Enter to use default [3399]:
+SET SSHPRT=3322& SET /p SSHPRT=Port number for SSHd traffic or hit Enter to use default [3322]:
+                 SET /p WINDPI=Set a custom DPI scale, or hit Enter for Windows default [%WINDPI%]:
 FOR /f "delims=" %%a in ('PowerShell -Command "%WINDPI% * 96" ') do set "LINDPI=%%a"
 FOR /f "delims=" %%a in ('PowerShell -Command 36 * "%WINDPI%" ') do set "PANEL=%%a"
-SET DEFEXL=NONO& SET /p DEFEXL=[Not recommended!] Type X to eXclude from Windows Defender: 
+SET DEFEXL=NONO& SET /p DEFEXL=[Not recommended!] Type X to eXclude from Windows Defender:
 SET DISTROFULL=%CD%\%DISTRO%
 SET _rlt=%DISTROFULL:~2,2%
 IF "%_rlt%"=="\\" SET DISTROFULL=%CD%%DISTRO%
@@ -54,16 +54,16 @@ ECHO @ECHO Uninstalling %DISTRO%, please wait...                                
 ECHO @CD ..                                                                                                   >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
 ECHO @WSLCONFIG /T %DISTRO%                                                                                   >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
 ECHO @"%APPDATA%\LxRunOffline.exe" ur -n %DISTRO%                                                             >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
-ECHO @NETSH AdvFirewall Firewall del rule name="%DISTRO% xRDP"                                                >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"   
+ECHO @NETSH AdvFirewall Firewall del rule name="%DISTRO% xRDP"                                                >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
 ECHO @NETSH AdvFirewall Firewall del rule name="%DISTRO% Secure Shell"                                        >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
 ECHO @NETSH AdvFirewall Firewall del rule name="%DISTRO% Avahi Multicast DNS"                                 >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
 ECHO @RD /S /Q "%DISTROFULL%"                                                                                 >> "%DISTROFULL%\Uninstall %DISTRO%.cmd"
-ECHO Installing xWSL Distro [%DISTRO%] to "%DISTROFULL%" & ECHO This will take a few minutes, please wait... 
+ECHO Installing xWSL Distro [%DISTRO%] to "%DISTROFULL%" & ECHO This will take a few minutes, please wait...
 IF %DEFEXL%==X (POWERSHELL.EXE -Command "wget %BASE%/excludeWSL.ps1 -UseBasicParsing -OutFile '%DISTROFULL%\excludeWSL.ps1'" & START /WAIT /MIN "Add exclusions in Windows Defender" "POWERSHELL.EXE" "-ExecutionPolicy" "Bypass" "-Command" ".\excludeWSL.ps1" "%DISTROFULL%" &  DEL ".\excludeWSL.ps1")
 ECHO:& ECHO [%TIME:~0,8%] Installing Ubuntu 22.04   (~0m30s)
-START /WAIT /MIN "Installing Ubuntu userspace..." "%TEMP%\LxRunOffline.exe" "i" "-n" "%DISTRO%" "-f" "%TEMP%\Ubuntu2204.tar.gz" "-d" "%DISTROFULL%" 
+START /WAIT /MIN "Installing Ubuntu userspace..." "%TEMP%\LxRunOffline.exe" "i" "-n" "%DISTRO%" "-f" "%TEMP%\Ubuntu2204.tar.gz" "-d" "%DISTROFULL%"
 (FOR /F "usebackq delims=" %%v IN (`PowerShell -Command "whoami"`) DO set "WAI=%%v") & ICACLS "%DISTROFULL%" /grant "%WAI%":(CI)(OI)F > NUL
-(COPY /Y "%TEMP%\LxRunOffline.exe" "%DISTROFULL%" > NUL ) & "%DISTROFULL%\LxRunOffline.exe" sd -n "%DISTRO%" 
+(COPY /Y "%TEMP%\LxRunOffline.exe" "%DISTROFULL%" > NUL ) & "%DISTROFULL%\LxRunOffline.exe" sd -n "%DISTRO%"
 ECHO [%TIME:~0,8%] APT update and clone repo (~3m00s)
 %GO% "echo 'deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe' > /etc/apt/sources.list"
 %GO% "echo 'deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe' >> /etc/apt/sources.list"
@@ -76,7 +76,7 @@ START /MIN /WAIT "Remove un-needed packages..." %GO% "apt-mark hold sudo ; DEBIA
 
 :APTRELY
 START /MIN /WAIT "Find best mirror..." %GO% "MyIP=$(curl -s ifconfig.me) ; MyCountry=$(curl -s ipinfo.io/$MyIP/country) ; echo Region: $MyCountry ; apt-select -C $MyCountry ; mv sources.list /etc/apt/ ; apt-get update 2> /tmp/apterr"
-FOR /F %%A in ("%DISTROFULL%\rootfs\tmp\apterr") do If %%~zA NEQ 0 GOTO APTRELY 
+FOR /F %%A in ("%DISTROFULL%\rootfs\tmp\apterr") do If %%~zA NEQ 0 GOTO APTRELY
 
 ECHO [%TIME:~0,8%] Remote Desktop Components (~1m45s)
 %GO% "DEBIAN_FRONTEND=noninteractive apt-fast -y install /tmp/xWSL/deb/xorgxrdp*.deb /tmp/xWSL/deb/xrdp*.deb /tmp/xWSL/deb/gksu_2.1.0_amd64.deb /tmp/xWSL/deb/libgksu2-0_2.1.0_amd64.deb /tmp/xWSL/deb/libgnome-keyring0_3.12.0-1+b2_amd64.deb /tmp/xWSL/deb/libgnome-keyring-common_3.12.0-1_all.deb /tmp/xWSL/deb/multiarch-support_2.27-3ubuntu1_amd64.deb /tmp/xWSL/deb/plata-theme_0.9.9-0ubuntu1~focal1_all.deb /tmp/xWSL/deb/libfdk-aac1_0.1.6-1_amd64.deb apt-config-icons apt-config-icons-hidpi apt-config-icons-large apt-config-icons-large-hidpi arj avahi-daemon base-files binutils cairo-5c cpp cpp-11 dbus-x11 dconf-gsettings-backend dconf-service dialog distro-info-data dumb-init fonts-cascadia-code gcc-11-base gstreamer1.0-tools inetutils-syslogd lhasa libatk-bridge2.0-0 libatspi2.0-0 libcairo-5c0 libdbus-glib-1-2 libdrm-intel1 libdw1 libegl1 libegl-mesa0 libfs6 libgbm1 libgl1 libglu1-mesa libglx0 libglx-mesa0 libgstreamer1.0-0 libgtk-3-0 libgtk-3-bin libgtk-3-common libgtkd-3-0 libice6 libisl23 liblhasa0 libllvm11 libmpc3 libnss-mdns libopengl0 libpackagekit-glib2-18 libphobos2-ldc-shared98 libpolkit-agent-1-0 libpolkit-gobject-1-0 libsecret-1-0 libsm6 libvte-2.91-0 libvte-2.91-common libvted-3-0 libwayland-server0 libx11-xcb1 libxatracker2 libxaw7 libxcb-randr0 libxcb-shape0 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxfont2 libxft2 libxi6 libxinerama1 libxkbfile1 libxmu6 libxmuu1 libxpm4 libxrandr2 libxss1 libxt6 libxtst6 libxv1 libxvmc1 libxxf86dga1 libxxf86vm1 mesa-vulkan-drivers moreutils nickle packagekit packagekit-tools putty putty-tools python3-distupgrade python3-psutil samba-common-bin tilix tilix-common ubuntu-release-upgrader-core unace unar unzip x11-apps x11-common x11-session-utils x11-utils x11-xfs-utils x11-xkb-utils x11-xserver-utils xauth xbase-clients xcvt xdg-utils xfonts-100dpi xfonts-base xfonts-encodings xfonts-scalable xfonts-utils xinit xinput xorg xserver-common xserver-xorg xserver-xorg-core xserver-xorg-legacy orphan-sysvinit-scripts xvfb zip humanity-icon-theme adwaita-icon-theme hicolor-icon-theme --no-install-recommends" > ".\logs\%TIME:~0,2%%TIME:~3,2%%TIME:~6,2% Remote Desktop Components.log" 2>&1
@@ -122,9 +122,9 @@ IF %LINDPI% LSS 120 ( %GO% "sed -i 's/Default-hdpi/Default/g' /tmp/xWSL/dist/etc
 %GO% "cp -Rp /tmp/xWSL/dist/* / ; cp -Rp /tmp/xWSL/dist/etc/skel/.config /root ; cp -Rp /tmp/xWSL/dist/etc/skel/.local /root ; chown -R xrdp:root /etc/xrdp"
 
 SET RUNEND=%date% @ %time:~0,5%
-CD %DISTROFULL% 
+CD %DISTROFULL%
 ECHO:
-SET /p XU=Enter name of primary user for %DISTRO%: 
+SET /p XU=Enter name of primary user for %DISTRO%:
 POWERSHELL -Command $prd = read-host "Enter password for %XU%" -AsSecureString ; $BSTR=[System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($prd) ; [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR) > .tmp & set /p PWO=<.tmp
 %GO% "useradd -m -p nulltemp -s /bin/bash %XU%"
 %GO% "(echo '%XU%:%PWO%') | chpasswd"
@@ -161,17 +161,17 @@ ECHO:
 ECHO:      Start: %RUNSTART%
 ECHO:        End: %RUNEND%
 %GO%  "echo -ne '   Packages:'\   ; dpkg-query -l | grep "^ii" | wc -l "
-ECHO: 
+ECHO:
 ECHO:  - xRDP Server listening on port %RDPPRT% and SSHd on port %SSHPRT%.
-ECHO: 
+ECHO:
 ECHO:  - Links for GUI and Console sessions have been placed on your desktop.
-ECHO: 
-ECHO:  - (Re)launch init from the Task Scheduler or by running the following command: 
+ECHO:
+ECHO:  - (Re)launch init from the Task Scheduler or by running the following command:
 ECHO:    schtasks /run /tn %DISTRO%
-ECHO: 
-ECHO: %DISTRO% Installation Complete!  GUI will start in a few seconds...  
-PING -n 6 LOCALHOST > NUL 
+ECHO:
+ECHO: %DISTRO% Installation Complete!  GUI will start in a few seconds...
+PING -n 6 LOCALHOST > NUL
 START "Remote Desktop Connection" "MSTSC.EXE" "/V" "%DISTROFULL%\%DISTRO% (%XU%) Desktop.rdp"
 CD ..
-ECHO: 
+ECHO:
 :ENDSCRIPT
